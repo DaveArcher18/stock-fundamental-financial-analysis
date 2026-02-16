@@ -580,8 +580,23 @@ def main() -> None:
     stage_8_summary(config, wacc_result, dcf_result,
                      sensitivity_result, reverse_result)
 
+    # ── Generate Report ───────────────────────────────────────────────
+    print(f"\n  Generating valuation report...")
+    try:
+        from insights.valuation_summary import generate_report
+        report = generate_report()
+        reports_dir = PROJECT_ROOT / "reports"
+        reports_dir.mkdir(parents=True, exist_ok=True)
+        report_path = reports_dir / "asml_valuation_report.md"
+        with open(report_path, "w") as f:
+            f.write(report)
+        print(f"  ✓ Report saved → {report_path}")
+        print(f"    ({len(report):,} chars, {report.count(chr(10)):,} lines)")
+    except Exception as e:
+        print(f"  ⚠ Report generation failed: {e}")
+
     elapsed = time.time() - start_time
-    print(f"  Total runtime: {elapsed:.1f}s\n")
+    print(f"\n  Total runtime: {elapsed:.1f}s\n")
 
 
 if __name__ == "__main__":
