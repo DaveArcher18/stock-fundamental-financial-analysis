@@ -1,0 +1,80 @@
+# =============================================================================
+# ASML Valuation — Central Assumptions File
+# =============================================================================
+# All tuneable parameters live here. No hardcoded values in Python code.
+# Modify this file to run different scenarios without changing any code.
+# =============================================================================
+
+# --- Company Identification ---
+company:
+  name: "ASML Holding N.V."
+  ticker: "ASML"
+  currency: "EUR"
+  fiscal_year_end: "December"
+
+# --- Tax ---
+tax:
+  effective_rate: 0.15          # Effective corporate tax rate
+  marginal_rate: 0.25           # Statutory / marginal rate for WACC
+
+# --- Cost of Capital (WACC Inputs) ---
+cost_of_capital:
+  risk_free_rate: 0.035         # 10-year government bond yield (EUR proxy)
+  equity_risk_premium: 0.05     # Mature market ERP
+  beta: 1.10                    # Levered equity beta vs broad market index
+  country_risk_premium: 0.0     # Additional country risk (Netherlands ≈ 0)
+  pre_tax_cost_of_debt: 0.03    # Yield on outstanding bonds / credit spread
+  target_debt_to_capital: 0.15  # D / (D + E) at market values
+
+# --- Projection Horizon ---
+projection:
+  explicit_years: 10            # Number of years in explicit forecast
+  terminal_growth_rate: 0.025   # g∞ — long-run nominal growth (< GDP growth)
+
+# --- Revenue Drivers ---
+revenue:
+  base_year_revenue: null       # Populated from financial data
+  near_term_growth_rates: []    # Year-by-year overrides for years 1–5
+  long_term_growth_rate: 0.06   # Steady-state revenue growth during explicit period
+
+# --- Margin Assumptions ---
+margins:
+  gross_margin: 0.52            # Long-run gross margin
+  operating_margin: 0.35        # Long-run EBIT margin
+  rd_to_revenue: 0.13           # R&D intensity
+  sga_to_revenue: 0.04          # SG&A intensity
+
+# --- Capital Intensity ---
+capital_intensity:
+  capex_to_revenue: 0.06        # Maintenance + growth capex / revenue
+  depreciation_to_revenue: 0.04 # Depreciation / revenue
+  nwc_to_revenue: 0.15          # Net working capital / revenue
+
+# --- Working Capital Days ---
+working_capital_days:
+  dso: 60                       # Days sales outstanding
+  dio: 120                      # Days inventory outstanding
+  dpo: 55                       # Days payable outstanding
+
+# --- ROIC ---
+roic:
+  capitalize_rd: false          # Whether to capitalize R&D for invested capital
+  rd_amortization_years: 5      # If capitalizing, useful life of R&D
+
+# --- Sensitivity Ranges ---
+sensitivity:
+  wacc_range: [0.07, 0.08, 0.09, 0.10, 0.11]
+  terminal_growth_range: [0.015, 0.020, 0.025, 0.030, 0.035]
+
+# --- Market Data ---
+market_data:
+  price_start_date: "2000-01-01"
+  benchmark_ticker: "^AEX"      # Amsterdam Exchange Index for beta estimation
+
+# --- SEC EDGAR ---
+sec:
+  cik: "0000937966"                                         # ASML CIK
+  user_agent: "ASMLValuation research@example.com"          # Required by SEC API
+  base_url: "https://data.sec.gov/api/xbrl/companyfacts"   # Company Facts endpoint
+  annual_forms: ["20-F", "20-F/A", "10-K", "10-K/A"]       # Annual filing types
+  years_to_keep: 10                                         # Fiscal years to retain
