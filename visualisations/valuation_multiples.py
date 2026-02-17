@@ -52,8 +52,23 @@ def _compute_trailing_pe(prices: pd.DataFrame, financials: pd.DataFrame) -> pd.S
     eps_points = {}
     for idx, row in financials.iterrows():
         date = pd.Timestamp(idx)
-        eps = row["net_income"] / row["shares_outstanding"]
+        # Robust shares access
+        shares = row.get("shares_outstanding")
+        if pd.isna(shares) or shares == 0:
+            shares = row.get("shares_outstanding_basic")
+        if pd.isna(shares) or shares == 0:
+            shares = row.get("common_shares_outstanding")
+        
+        # Fallback to config if available (not easily accessible here without plumbing)
+        # For now, if shares are still missing, skip this point or use 1 to avoid ZeroDivision
+        if pd.isna(shares) or shares == 0:
+            continue
+
+        eps = row["net_income"] / shares
         eps_points[date] = eps
+
+    if not eps_points:
+        return pd.Series(dtype=float)
 
     eps_series = pd.Series(eps_points).sort_index()
 
@@ -78,10 +93,19 @@ def _compute_trailing_ev_ebitda(prices: pd.DataFrame, financials: pd.DataFrame) 
 
     for idx, row in financials.iterrows():
         date = pd.Timestamp(idx)
-        ebitda = row["operating_income"] + row["depreciation"]
+        ebitda = row.get("operating_income", 0) + row.get("depreciation", 0)
         ebitda_points[date] = ebitda
-        shares_points[date] = row["shares_outstanding"]
-        net_debt = row["long_term_debt"] - row["cash"]
+        
+        # Robust shares access
+        shares = row.get("shares_outstanding")
+        if pd.isna(shares) or shares == 0:
+            shares = row.get("shares_outstanding_basic")
+        if pd.isna(shares) or shares == 0:
+            shares = row.get("common_shares_outstanding")
+        
+        shares_points[date] = shares if pd.notna(shares) else np.nan
+        
+        net_debt = row.get("long_term_debt", 0) - row.get("cash", 0)
         net_debt_points[date] = net_debt
 
     ebitda_daily = pd.Series(ebitda_points).sort_index().reindex(close.index, method="ffill")

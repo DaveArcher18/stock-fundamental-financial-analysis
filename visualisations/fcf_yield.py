@@ -39,7 +39,13 @@ def plot_fcf_yield(output_dir="reports/charts"):
 
     years = financials["fiscal_year"].astype(int).values
     ocf = financials["operating_cash_flow"].values
-    capex = financials["capex"].values
+    
+    # Handle missing capex
+    if "capex" in financials.columns:
+        capex = financials["capex"].values
+    else:
+        capex = np.zeros(len(financials))
+        
     fcf = ocf - capex
 
     # Get year-end prices and compute market cap
@@ -49,7 +55,15 @@ def plot_fcf_yield(output_dir="reports/charts"):
         # Find closest price to fiscal year-end
         closest = prices.index[prices.index.get_indexer([fy_end], method="nearest")[0]]
         price_usd = prices.loc[closest, "Close"]
-        mkt_cap_usd = price_usd * row["shares_outstanding"]
+        
+        # Robust shares access
+        shares = row.get("shares_outstanding")
+        if pd.isna(shares) or shares == 0:
+            shares = row.get("shares_outstanding_basic")
+        if pd.isna(shares) or shares == 0:
+            shares = row.get("common_shares_outstanding")
+            
+        mkt_cap_usd = price_usd * (shares if pd.notna(shares) else 0)
         mkt_cap_eur = mkt_cap_usd * 0.92
         mkt_caps.append(mkt_cap_eur)
 

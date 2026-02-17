@@ -34,9 +34,30 @@ def _estimate_historical_intrinsic(financials, config, wacc_rate):
     for idx, row in financials.iterrows():
         fy = int(row["fiscal_year"])
         base_rev = row["revenue"]
-        shares = row["shares_outstanding"]
-        net_debt = row["long_term_debt"] - row["cash"]
-        current_margin = row["operating_income"] / row["revenue"]
+        # Robust shares access
+        shares = row.get("shares_outstanding")
+        if pd.isna(shares) or shares == 0:
+            shares = row.get("shares_outstanding_basic")
+        if pd.isna(shares) or shares == 0:
+            shares = row.get("common_shares_outstanding")
+        
+        if pd.isna(shares) or shares == 0:
+            continue
+
+        if pd.isna(shares) or shares == 0:
+            continue
+
+        net_debt = row.get("long_term_debt", 0) - row.get("cash", 0)
+        
+        op_inc = row.get("operating_income")
+        if pd.isna(op_inc):
+             # Try to calculate OpInc = Revenue - COGS - RD - SGA
+            cogs = row.get("cost_of_revenue", 0)
+            rd = row.get("rd_expense", 0)
+            sga = row.get("sga_expense", 0)
+            op_inc = base_rev - cogs - rd - sga
+            
+        current_margin = op_inc / base_rev if base_rev else 0
 
         n = config["projection"]["explicit_years"]
         tg = config["projection"]["terminal_growth_rate"]

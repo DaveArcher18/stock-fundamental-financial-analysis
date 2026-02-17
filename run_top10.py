@@ -836,7 +836,7 @@ def main():
         start = time.time()
         try:
             write_config(ticker)
-            success = run_pipeline(ticker, skip_viz=True)
+            success = run_pipeline(ticker, skip_viz=False)
             elapsed = time.time() - start
             results[ticker] = ("✓ OK" if success else "⚠ FAILED", f"{elapsed:.1f}s")
             if success:
