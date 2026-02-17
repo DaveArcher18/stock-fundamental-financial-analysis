@@ -191,7 +191,8 @@ def _business_overview(data: dict) -> str:
     lines = []
     lines.append(f"## 1. Business Overview")
     lines.append(f"")
-    lines.append(f"_{data['config'].get('company', {}).get('name', 'Company')} is a leading company in the {info.get('sector', 'Technology')} sector._")
+    description = data["config"].get("company", {}).get("description", f"_{data['config'].get('company', {}).get('name', 'Company')} is a leading company in the {info.get('sector', 'Technology')} sector._")
+    lines.append(f"{description}")
     lines.append(f"")
     lines.append(f"**Latest fiscal year (FY{int(latest['fiscal_year'])}):**")
     lines.append(f"- Revenue: €{rev:.1f}B")
@@ -255,7 +256,7 @@ def _roic_analysis(data: dict) -> str:
     lines = []
     lines.append(f"## 3. Return on Invested Capital (ROIC)")
     lines.append(f"")
-    lines.append(f"ROIC is the central metric for assessing whether ASML creates value — "
+    lines.append(f"ROIC is the central metric for assessing whether the company creates value — "
                  f"it measures how much operating profit the company generates per euro of capital invested.")
     lines.append(f"")
     lines.append(f"| FY | NOPAT (€B) | Invested Capital (€B) | ROIC | ROE |")
@@ -272,8 +273,7 @@ def _roic_analysis(data: dict) -> str:
     # Summary
     avg_roic = roic["roic"].tail(3).mean() * 100
     lines.append(f"")
-    lines.append(f"**3-year average ROIC: {avg_roic:.1f}%** — well above the cost of capital "
-                 f"(WACC ≈ 8.5%), confirming ASML's exceptional value creation.")
+    lines.append(f"**3-year average ROIC: {avg_roic:.1f}%**")
     lines.append(f"")
     return "\n".join(lines)
 
@@ -297,10 +297,13 @@ def _working_capital(data: dict) -> str:
 
     latest = wc.iloc[-1]
     lines.append(f"")
-    lines.append(f"**Key observation:** ASML's cash conversion cycle is **{latest['ccc']:.0f} days**, "
-                 f"reflecting the 6–12 month build times for EUV systems. "
-                 f"Days inventory outstanding ({latest['dio']:.0f} days) is particularly high, "
-                 f"which is structural for capital equipment manufacturers.")
+    latest = wc.iloc[-1]
+    lines.append(f"")
+    lines.append(f"**Key observation:** The cash conversion cycle is **{latest['ccc']:.0f} days** in the latest fiscal year. "
+                 f"Days inventory outstanding is {latest['dio']:.0f} days.")
+                 
+    lines.append(f"")
+    return "\n".join(lines)
     lines.append(f"")
     return "\n".join(lines)
 
@@ -341,9 +344,8 @@ def _wacc_section(data: dict) -> str:
     lines.append(f"| Cost of debt (after-tax) | {wacc['cost_of_debt_after_tax']*100:.2f}% |")
     lines.append(f"| **WACC** | **{wacc['wacc']*100:.2f}%** |")
     lines.append(f"")
-    lines.append(f"*Note: ASML uses minimal financial leverage (D/V < 1%), so WACC is "
-                 f"dominated by the cost of equity. The beta of 1.10 is a conservative "
-                 f"estimate — Yahoo Finance reports 1.46, which would raise WACC to ~10%.*")
+    lines.append(f"")
+    return "\n".join(lines)
     lines.append(f"")
     return "\n".join(lines)
 
@@ -373,10 +375,10 @@ def _dcf_section(data: dict) -> str:
         near_str = ", ".join(f"{g*100:.1f}%" for g in near)
         lines.append(f"| Near-term growth (Yr 1–5) | [{near_str}] | Company guidance + consensus |")
     lines.append(f"| Long-term growth (Yr 6–10) | {config['revenue']['long_term_growth_rate']*100:.0f}% fade | Secular semi growth |")
-    lines.append(f"| Terminal growth (g∞) | {config['projection']['terminal_growth_rate']*100:.1f}% | ~ EUR nominal GDP |")
-    lines.append(f"| Operating margin target | {config['margins']['operating_margin']*100:.0f}% | ASML 2030 guidance (GM 56–60%) |")
+    lines.append(f"| Terminal growth (g∞) | {config['projection']['terminal_growth_rate']*100:.1f}% | ~ Nominal GDP |")
+    lines.append(f"| Operating margin target | {config['margins']['operating_margin']*100:.0f}% | Assumption based on company/industry analysis |")
     lines.append(f"| Margin fade period | 5 years | Linear from {inputs['current_op_margin']*100:.1f}% → {inputs['target_op_margin']*100:.0f}% |")
-    lines.append(f"| Capex / Revenue | {config['capital_intensity']['capex_to_revenue']*100:.0f}% | Elevated — capacity buildout |")
+    lines.append(f"| Capex / Revenue | {config['capital_intensity']['capex_to_revenue']*100:.0f}% | Assumption based on capital intensity |")
     lines.append(f"| ΔNWC / ΔRevenue | {config['capital_intensity']['nwc_to_revenue']*100:.0f}% | Marginal working capital rate |")
     lines.append(f"| Tax rate | {config['tax']['effective_rate']*100:.0f}% | Blended effective rate |")
     lines.append(f"")
@@ -531,7 +533,8 @@ def _reverse_dcf_section(data: dict) -> str:
     lines = []
     lines.append(f"## 8. Reverse DCF — What the Market Implies")
     lines.append(f"")
-    lines.append(f"Instead of asking *\"what is ASML worth?\"*, we ask *\"what must the market "
+    lines.append(f"")
+    lines.append(f"Instead of asking *\"what is the company worth?\"*, we ask *\"what must the market "
                  f"be assuming to justify the current price?\"* Each parameter is solved "
                  f"independently while holding all others at base-case values.")
     lines.append(f"")
@@ -559,10 +562,9 @@ def _reverse_dcf_section(data: dict) -> str:
 
     lines.append(f"")
     lines.append(f"**Interpretation:** To justify ~€{reverse['market_price_eur']:,.0f}/share "
-                 f"through growth alone, ASML would need to compound revenue at "
+                 f"through growth alone, the company would need to compound revenue at "
                  f"**{ig*100:.1f}%** annually for 10 years, reaching "
                  f"**€{implied_rev/1e9:.0f}B** by FY{int(latest['fiscal_year'])+10}. "
-                 f"This would make ASML larger than the entire WFE market today. "
                  f"No single assumption justifies the price — the market is pricing in "
                  f"multiple favourable outcomes simultaneously.")
     lines.append(f"")
@@ -571,32 +573,22 @@ def _reverse_dcf_section(data: dict) -> str:
 
 def _risks_and_catalysts(data: dict) -> str:
     """Section 9: Key risks and catalysts."""
+    token = data['config'].get('company', {}).get('ticker', 'Company')
     lines = []
     lines.append(f"## 9. Key Risks & Catalysts")
     lines.append(f"")
-    lines.append(f"### Upside Catalysts")
+    lines.append(f"For specific details on risks and growth drivers, please refer to the calibration notes in the configuration file or the company's latest 10-K filing.")
     lines.append(f"")
-    lines.append(f"- **High-NA EUV ramp:** Successful volume deployment of next-gen systems "
-                 f"(€350M+ ASP vs ~€200M for standard EUV) could accelerate revenue and margins")
-    lines.append(f"- **AI capex supercycle:** Sustained hyperscaler investment in AI chips "
-                 f"drives leading-edge node demand beyond current consensus")
-    lines.append(f"- **Installed base growth:** Service & upgrade revenue (~30% of total) "
-                 f"grows predictably as the EUV fleet expands")
-    lines.append(f"- **Geopolitical reshoring:** CHIPS Act and EU subsidies drive incremental "
-                 f"fab construction, expanding the addressable market")
+    lines.append(f"### General Upside Catalysts")
+    lines.append(f"- **Better-than-expected macro environment:** Global economic growth supporting end-market demand.")
+    lines.append(f"- **Margin expansion:** Successful execution of cost-saving initiatives or mix shift to higher-margin software/services.")
+    lines.append(f"- **New product success:** Faster adoption of new product lines or technologies (e.g., AI).")
     lines.append(f"")
-    lines.append(f"### Downside Risks")
-    lines.append(f"")
-    lines.append(f"- **Cyclical downturn:** Semiconductor capex is highly cyclical; a 30–40% "
-                 f"peak-to-trough revenue decline is historically normal")
-    lines.append(f"- **China export restrictions:** Further tightening could remove ~15% of "
-                 f"addressable market (DUV sales to China)")
-    lines.append(f"- **Customer concentration:** Top 3 customers (TSMC, Samsung, Intel) "
-                 f"represent ~80%+ of system revenue")
-    lines.append(f"- **Execution risk on High-NA:** Delays or yield issues could push out "
-                 f"the growth inflection point")
-    lines.append(f"- **Valuation compression:** Multiple contraction if growth expectations "
-                 f"are not met or interest rates remain elevated")
+    lines.append(f"### General Downside Risks")
+    lines.append(f"- **Macroeconomic slowdown:** Recession risk impacting consumer/enterprise spending.")
+    lines.append(f"- **Regulatory headwinds:** Antitrust scrutiny or geopolitical trade restrictions.")
+    lines.append(f"- **Execution risk:** Failure to meet product roadmaps or margin targets.")
+    lines.append(f"- **Valuation compression:** Multiple contraction if interest rates rise or growth slows.")
     lines.append(f"")
     return "\n".join(lines)
 
@@ -625,9 +617,9 @@ def _methodology(data: dict) -> str:
     lines.append(f"")
     lines.append(f"| Source | Data | Update Frequency |")
     lines.append(f"|--------|------|-----------------|")
-    lines.append(f"| SEC EDGAR (XBRL API) | 10 years of annual financials | Annual (20-F filings) |")
+    lines.append(f"| SEC EDGAR (XBRL API) | 10 years of annual financials | Annual (20-F/10-K filings) |")
     lines.append(f"| Yahoo Finance | Market cap, beta, price history | Real-time |")
-    lines.append(f"| ASML Investor Day (Nov 2024) | 2030 revenue & margin targets | Ad hoc |")
+    lines.append(f"| Company Guidance | Revenue & margin targets | Ad hoc |")
     lines.append(f"| Analyst consensus | Near-term revenue estimates | Quarterly |")
     lines.append(f"| Damodaran | Equity risk premium, country risk | Annual |")
     lines.append(f"")
@@ -643,7 +635,7 @@ def _methodology(data: dict) -> str:
     lines.append(f"")
     lines.append(f"---")
     lines.append(f"")
-    lines.append(f"*This report was generated programmatically by the ASML Valuation Framework. "
+    lines.append(f"*This report was generated programmatically by the Stock Valuation Framework. "
                  f"All assumptions are documented in `config/assumptions.yaml` and can be "
                  f"modified to produce alternative scenarios.*")
     lines.append(f"")

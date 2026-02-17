@@ -23,7 +23,7 @@
 
 ## 1. Business Overview
 
-ASML is the world's sole manufacturer of extreme ultraviolet (EUV) lithography systems, which are essential for producing the most advanced semiconductor chips at 7nm and below. The company holds a near-monopoly position in lithography equipment, serving all major chipmakers including TSMC, Samsung, and Intel.
+BROADCOM (Feb 2026): FY ends Oct. Revenue $64B FY2025. β=1.21. Adj. EBITDA margin 67%. GAAP OpM lower due to VMware amortisation. AI semi revenue $20B (31% of total), growing 65% YoY. Custom AI accelerator designs for 3 hyperscalers. D/(D+E) ~35% from $69B VMware acquisition debt.
 
 **Latest fiscal year (FY2025):**
 - Revenue: €63.9B
@@ -56,7 +56,7 @@ ASML is the world's sole manufacturer of extreme ultraviolet (EUV) lithography s
 
 ## 3. Return on Invested Capital (ROIC)
 
-ROIC is the central metric for assessing whether ASML creates value — it measures how much operating profit the company generates per euro of capital invested.
+ROIC is the central metric for assessing whether the company creates value — it measures how much operating profit the company generates per euro of capital invested.
 
 | FY | NOPAT (€B) | Invested Capital (€B) | ROIC | ROE |
 |---:|-----------:|----------------------:|-----:|----:|
@@ -71,7 +71,7 @@ ROIC is the central metric for assessing whether ASML creates value — it measu
 | 2024 | 12.1 | 154.6 | 21.1% | 24.6% |
 | 2025 | 22.9 | 153.4 | 14.8% | nan% |
 
-**3-year average ROIC: 20.1%** — well above the cost of capital (WACC ≈ 8.5%), confirming ASML's exceptional value creation.
+**3-year average ROIC: 20.1%**
 
 ## 4. Working Capital & Cash Conversion
 
@@ -83,7 +83,8 @@ ROIC is the central metric for assessing whether ASML creates value — it measu
 | 2024 | 4.5 | +0.7 | 31 | 34 | 32 | 33 |
 | 2025 | 7.9 | +3.3 | 41 | 40 | 28 | 53 |
 
-**Key observation:** ASML's cash conversion cycle is **53 days**, reflecting the 6–12 month build times for EUV systems. Days inventory outstanding (40 days) is particularly high, which is structural for capital equipment manufacturers.
+
+**Key observation:** The cash conversion cycle is **53 days** in the latest fiscal year. Days inventory outstanding is 40 days.
 
 ## 5. Cost of Capital (WACC)
 
@@ -111,7 +112,6 @@ ROIC is the central metric for assessing whether ASML creates value — it measu
 | Cost of debt (after-tax) | nan% |
 | **WACC** | **nan%** |
 
-*Note: ASML uses minimal financial leverage (D/V < 1%), so WACC is dominated by the cost of equity. The beta of 1.10 is a conservative estimate — Yahoo Finance reports 1.46, which would raise WACC to ~10%.*
 
 ## 6. DCF Valuation
 
@@ -121,10 +121,10 @@ ROIC is the central metric for assessing whether ASML creates value — it measu
 |------------|------:|-----------|
 | Near-term growth (Yr 1–5) | [28.0%, 20.0%, 15.0%, 12.0%, 10.0%] | Company guidance + consensus |
 | Long-term growth (Yr 6–10) | 6% fade | Secular semi growth |
-| Terminal growth (g∞) | 3.0% | ~ EUR nominal GDP |
-| Operating margin target | 45% | ASML 2030 guidance (GM 56–60%) |
+| Terminal growth (g∞) | 3.0% | ~ Nominal GDP |
+| Operating margin target | 45% | Assumption based on company/industry analysis |
 | Margin fade period | 5 years | Linear from 39.9% → 45% |
-| Capex / Revenue | 4% | Elevated — capacity buildout |
+| Capex / Revenue | 4% | Assumption based on capital intensity |
 | ΔNWC / ΔRevenue | 10% | Marginal working capital rate |
 | Tax rate | 10% | Blended effective rate |
 
@@ -178,7 +178,6 @@ Which parameters have the biggest impact on intrinsic value?
 | WACC \ g∞ | 1.5% | 2.0% | 2.5% | 3.0% | 3.5% |
 |---:|---:|---:|---:|---:|---:|
 | 7.0% | €183 | €195 | €210 | €228 | €252 |
-| nan% | €nan | €nan | €nan | €nan | €nan |
 | 7.5% | €167 | €176 | €188 | €202 | €220 |
 | 8.0% | €153 | €161 | €170 | €182 | €195 |
 | 8.5% | €142 | €148 | €156 | €165 | €175 |
@@ -186,6 +185,7 @@ Which parameters have the biggest impact on intrinsic value?
 | 10.0% | €115 | €119 | €123 | €128 | €134 |
 | 10.5% | €108 | €112 | €115 | €119 | €124 |
 | 11.0% | €102 | €105 | €108 | €112 | €116 |
+| nan% | €nan | €nan | €nan | €nan | €nan |
 
 ### Revenue Growth × WACC (Value / Share)
 
@@ -202,7 +202,8 @@ Which parameters have the biggest impact on intrinsic value?
 
 ## 8. Reverse DCF — What the Market Implies
 
-Instead of asking *"what is ASML worth?"*, we ask *"what must the market be assuming to justify the current price?"* Each parameter is solved independently while holding all others at base-case values.
+
+Instead of asking *"what is the company worth?"*, we ask *"what must the market be assuming to justify the current price?"* Each parameter is solved independently while holding all others at base-case values.
 
 | Parameter | Implied Value | Our Assumption | Plausible? |
 |-----------|-------------:|---------------:|:----------:|
@@ -211,24 +212,22 @@ Instead of asking *"what is ASML worth?"*, we ask *"what must the market be assu
 | WACC | 6.07% | nan% | ✓ |
 | Terminal growth | nan% | 3.0% | ✓ |
 
-**Interpretation:** To justify ~€299/share through growth alone, ASML would need to compound revenue at **0.0%** annually for 10 years, reaching **€64B** by FY2035. This would make ASML larger than the entire WFE market today. No single assumption justifies the price — the market is pricing in multiple favourable outcomes simultaneously.
+**Interpretation:** To justify ~€299/share through growth alone, the company would need to compound revenue at **0.0%** annually for 10 years, reaching **€64B** by FY2035. No single assumption justifies the price — the market is pricing in multiple favourable outcomes simultaneously.
 
 ## 9. Key Risks & Catalysts
 
-### Upside Catalysts
+For specific details on risks and growth drivers, please refer to the calibration notes in the configuration file or the company's latest 10-K filing.
 
-- **High-NA EUV ramp:** Successful volume deployment of next-gen systems (€350M+ ASP vs ~€200M for standard EUV) could accelerate revenue and margins
-- **AI capex supercycle:** Sustained hyperscaler investment in AI chips drives leading-edge node demand beyond current consensus
-- **Installed base growth:** Service & upgrade revenue (~30% of total) grows predictably as the EUV fleet expands
-- **Geopolitical reshoring:** CHIPS Act and EU subsidies drive incremental fab construction, expanding the addressable market
+### General Upside Catalysts
+- **Better-than-expected macro environment:** Global economic growth supporting end-market demand.
+- **Margin expansion:** Successful execution of cost-saving initiatives or mix shift to higher-margin software/services.
+- **New product success:** Faster adoption of new product lines or technologies (e.g., AI).
 
-### Downside Risks
-
-- **Cyclical downturn:** Semiconductor capex is highly cyclical; a 30–40% peak-to-trough revenue decline is historically normal
-- **China export restrictions:** Further tightening could remove ~15% of addressable market (DUV sales to China)
-- **Customer concentration:** Top 3 customers (TSMC, Samsung, Intel) represent ~80%+ of system revenue
-- **Execution risk on High-NA:** Delays or yield issues could push out the growth inflection point
-- **Valuation compression:** Multiple contraction if growth expectations are not met or interest rates remain elevated
+### General Downside Risks
+- **Macroeconomic slowdown:** Recession risk impacting consumer/enterprise spending.
+- **Regulatory headwinds:** Antitrust scrutiny or geopolitical trade restrictions.
+- **Execution risk:** Failure to meet product roadmaps or margin targets.
+- **Valuation compression:** Multiple contraction if interest rates rise or growth slows.
 
 ## 10. Methodology & Data Sources
 
@@ -248,9 +247,9 @@ The model is supplemented with:
 
 | Source | Data | Update Frequency |
 |--------|------|-----------------|
-| SEC EDGAR (XBRL API) | 10 years of annual financials | Annual (20-F filings) |
+| SEC EDGAR (XBRL API) | 10 years of annual financials | Annual (20-F/10-K filings) |
 | Yahoo Finance | Market cap, beta, price history | Real-time |
-| ASML Investor Day (Nov 2024) | 2030 revenue & margin targets | Ad hoc |
+| Company Guidance | Revenue & margin targets | Ad hoc |
 | Analyst consensus | Near-term revenue estimates | Quarterly |
 | Damodaran | Equity risk premium, country risk | Annual |
 
@@ -263,4 +262,4 @@ The model is supplemented with:
 
 ---
 
-*This report was generated programmatically by the ASML Valuation Framework. All assumptions are documented in `config/assumptions.yaml` and can be modified to produce alternative scenarios.*
+*This report was generated programmatically by the Stock Valuation Framework. All assumptions are documented in `config/assumptions.yaml` and can be modified to produce alternative scenarios.*
