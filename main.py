@@ -33,13 +33,34 @@ import yaml
 PROJECT_ROOT = Path(__file__).resolve().parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-RAW_DIR = PROJECT_ROOT / "data" / "raw"
-PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
 CONFIG_PATH = PROJECT_ROOT / "config" / "assumptions.yaml"
 
-# Ensure output directories exist
-RAW_DIR.mkdir(parents=True, exist_ok=True)
-PROCESSED_DIR.mkdir(parents=True, exist_ok=True)
+# Per-company output dirs — set after config is loaded in main()
+OUTPUT_DIR: Path = None   # output/{TICKER}/
+RAW_DIR: Path = None      # output/{TICKER}/data/raw/
+PROCESSED_DIR: Path = None  # output/{TICKER}/data/processed/
+REPORTS_DIR: Path = None  # output/{TICKER}/reports/
+CHARTS_DIR: Path = None   # output/{TICKER}/reports/charts/
+
+
+def _setup_output_dirs(config: dict) -> None:
+    """Set up per-company output directories from config."""
+    global OUTPUT_DIR, RAW_DIR, PROCESSED_DIR, REPORTS_DIR, CHARTS_DIR
+    ticker = config.get("company", {}).get("ticker", "COMPANY").upper()
+    OUTPUT_DIR = PROJECT_ROOT / "output" / ticker
+    RAW_DIR = OUTPUT_DIR / "data" / "raw"
+    PROCESSED_DIR = OUTPUT_DIR / "data" / "processed"
+    REPORTS_DIR = OUTPUT_DIR / "reports"
+    CHARTS_DIR = OUTPUT_DIR / "reports" / "charts"
+    for d in [RAW_DIR, PROCESSED_DIR, REPORTS_DIR, CHARTS_DIR]:
+        d.mkdir(parents=True, exist_ok=True)
+
+    # Snapshot assumptions for reproducibility
+    import shutil
+    shutil.copy2(CONFIG_PATH, OUTPUT_DIR / "assumptions.yaml")
+
+    print(f"  Output directory:  {OUTPUT_DIR}")
+    print(f"  ✓ assumptions.yaml copied → {OUTPUT_DIR / 'assumptions.yaml'}")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -112,6 +133,8 @@ def stage_1_config() -> dict:
     print(f"  Op. margin target: {config['margins']['operating_margin']*100:.0f}%")
 
     print(f"\n  ✓ Configuration loaded from {CONFIG_PATH}")
+
+    _setup_output_dirs(config)
     return config
 
 
@@ -125,10 +148,12 @@ def stage_2_extraction(config: dict) -> None:
     # ── SEC XBRL ──
     print("  ── SEC EDGAR XBRL Extraction ──\n")
     try:
-        from etl.extract_sec_xbrl import extract_xbrl_data
-        xbrl_result = extract_xbrl_data(
+        from etl.extract_sec_xbrl import run_sec_extraction
+        xbrl_result = run_sec_extraction(
             cik=config["sec"]["cik"],
             user_agent=config["sec"]["user_agent"],
+            raw_output_dir=str(RAW_DIR / "xbrl"),
+            processed_output_dir=str(PROCESSED_DIR),
         )
         print(f"  ✓ XBRL: {len(xbrl_result)} years of annual data extracted")
     except Exception as e:
@@ -155,8 +180,11 @@ def stage_3_analysis(config: dict) -> dict:
     _banner("FINANCIAL ANALYSIS", 3)
 
     try:
-        from processing.run_analysis import main as run_analysis_main
-        run_analysis_main()
+        from processing.run_analysis import run_analysis
+        run_analysis(
+            data_path=str(PROCESSED_DIR / "financials_annual.csv"),
+            output_dir=str(PROCESSED_DIR),
+        )
         print(f"\n  ✓ Analysis complete — results in {PROCESSED_DIR}/")
         return {"status": "ok"}
     except Exception as e:
@@ -433,7 +461,8 @@ def stage_8_summary(config: dict, wacc_result: dict, dcf_result: dict,
 
     width = 72
     print(f"  {'─' * (width - 4)}")
-    print(f"  ASML Holding N.V. — Intrinsic Valuation")
+    company_name = config.get("company", {}).get("name", "Company")
+    print(f"  {company_name} — Intrinsic Valuation")
     print(f"  Date: {time.strftime('%Y-%m-%d')}")
     print(f"  {'─' * (width - 4)}")
 
@@ -590,10 +619,9 @@ def main() -> None:
     try:
         from insights.valuation_summary import generate_report
         report = generate_report()
-        reports_dir = PROJECT_ROOT / "reports"
-        reports_dir.mkdir(parents=True, exist_ok=True)
+        REPORTS_DIR.mkdir(parents=True, exist_ok=True)
         ticker = config.get("company", {}).get("ticker", "company").lower()
-        report_path = reports_dir / f"{ticker}_valuation_report.md"
+        report_path = REPORTS_DIR / f"{ticker}_valuation_report.md"
         with open(report_path, "w") as f:
             f.write(report)
         print(f"  ✓ Report saved → {report_path}")
@@ -607,7 +635,7 @@ def main() -> None:
         print(f"  Generating valuation charts...")
         try:
             from visualisations.generate_all import run_campaign
-            run_campaign()
+            run_campaign(output_dir=str(CHARTS_DIR))
         except Exception as e:
             print(f"  ⚠ Chart generation failed: {e}")
     else:

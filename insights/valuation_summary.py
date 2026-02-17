@@ -23,10 +23,16 @@ import yaml
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
-RAW_DIR = PROJECT_ROOT / "data" / "raw"
-REPORTS_DIR = PROJECT_ROOT / "reports"
 CONFIG_PATH = PROJECT_ROOT / "config" / "assumptions.yaml"
+
+
+def _get_company_dirs() -> tuple[Path, Path, Path]:
+    """Derive per-company output directories from config."""
+    with open(CONFIG_PATH, "r") as f:
+        cfg = yaml.safe_load(f)
+    ticker = cfg.get("company", {}).get("ticker", "COMPANY").upper()
+    base = PROJECT_ROOT / "output" / ticker
+    return base / "data" / "raw", base / "data" / "processed", base / "reports"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -37,6 +43,7 @@ CONFIG_PATH = PROJECT_ROOT / "config" / "assumptions.yaml"
 def _load_all_data() -> dict:
     """Load all processed data into a single dictionary."""
     data = {}
+    raw_dir, processed_dir, _ = _get_company_dirs()
 
     # Config
     with open(CONFIG_PATH, "r") as f:
@@ -44,31 +51,28 @@ def _load_all_data() -> dict:
 
     # Financials
     data["financials"] = pd.read_csv(
-        PROCESSED_DIR / "financials_annual.csv", index_col=0, parse_dates=True,
+        processed_dir / "financials_annual.csv", index_col=0, parse_dates=True,
     )
-    data["ratios"] = pd.read_csv(PROCESSED_DIR / "financial_ratios.csv", index_col=0)
-    data["roic"] = pd.read_csv(PROCESSED_DIR / "roic_analysis.csv", index_col=0)
-    data["working_capital"] = pd.read_csv(PROCESSED_DIR / "working_capital.csv", index_col=0)
+    data["ratios"] = pd.read_csv(processed_dir / "financial_ratios.csv", index_col=0)
+    data["roic"] = pd.read_csv(processed_dir / "roic_analysis.csv", index_col=0)
+    data["working_capital"] = pd.read_csv(processed_dir / "working_capital.csv", index_col=0)
 
     # DCF
-    data["dcf_proj"] = pd.read_csv(PROCESSED_DIR / "dcf_projections.csv")
+    data["dcf_proj"] = pd.read_csv(processed_dir / "dcf_projections.csv")
 
     # Sensitivity
-    data["tornado"] = pd.read_csv(PROCESSED_DIR / "tornado_analysis.csv")
-    data["reverse"] = pd.read_csv(PROCESSED_DIR / "reverse_dcf_implied.csv")
+    data["tornado"] = pd.read_csv(processed_dir / "tornado_analysis.csv")
+    data["reverse"] = pd.read_csv(processed_dir / "reverse_dcf_implied.csv")
 
     # Sensitivity tables
     for name in ["sensitivity_wacc_tg", "sensitivity_growth_margin", "sensitivity_growth_wacc"]:
-        path = PROCESSED_DIR / f"{name}.csv"
+        path = processed_dir / f"{name}.csv"
         if path.exists():
             data[name] = pd.read_csv(path, index_col=0)
 
-    # Company info — derive filename from config ticker
-    import yaml as _yaml
-    with open(PROJECT_ROOT / "config" / "assumptions.yaml") as _f:
-        _cfg = _yaml.safe_load(_f)
-    _ticker = _cfg.get("company", {}).get("ticker", "company").lower()
-    info_path = RAW_DIR / f"{_ticker}_company_info.csv"
+    # Company info
+    _ticker = data["config"].get("company", {}).get("ticker", "company").lower()
+    info_path = raw_dir / f"{_ticker}_company_info.csv"
     if info_path.exists():
         info_df = pd.read_csv(info_path)
         data["company_info"] = dict(zip(info_df["field"], info_df["value"]))
@@ -641,13 +645,13 @@ if __name__ == "__main__":
 
     report = generate_report()
 
-    # Save
-    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    import yaml as _yaml
-    with open(PROJECT_ROOT / "config" / "assumptions.yaml") as _f:
-        _cfg = _yaml.safe_load(_f)
+    # Save to per-company reports dir
+    raw_dir, _, reports_dir = _get_company_dirs()
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    with open(CONFIG_PATH, "r") as _f:
+        _cfg = yaml.safe_load(_f)
     _ticker = _cfg.get("company", {}).get("ticker", "company").lower()
-    output_path = REPORTS_DIR / f"{_ticker}_valuation_report.md"
+    output_path = reports_dir / f"{_ticker}_valuation_report.md"
     with open(output_path, "w") as f:
         f.write(report)
 

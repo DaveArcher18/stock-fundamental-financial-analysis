@@ -19,21 +19,22 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from visualisations.chart_style import (
-    COLORS, create_figure, add_source_footer, save_chart, apply_style,
+    COLORS, add_source_footer, save_chart, apply_style, get_output_dirs,
 )
 
 
 def plot_sensitivity_heatmap(output_dir="reports/charts"):
     """Chart 8: Growth × WACC sensitivity heatmap."""
-    table = pd.read_csv(
-        PROJECT_ROOT / "data" / "processed" / "sensitivity_growth_wacc.csv",
+    _, processed_dir = get_output_dirs()
+    sensitivity = pd.read_csv(
+        processed_dir / "sensitivity_growth_wacc.csv",
         index_col=0,
     )
 
     # Convert index and columns to percentages for display
-    row_labels = [f"{float(r)*100:.0f}%" for r in table.index]
-    col_labels = [f"{float(c)*100:.1f}%" for c in table.columns]
-    values = table.values
+    row_labels = [f"{float(r)*100:.0f}%" for r in sensitivity.index]
+    col_labels = [f"{float(c)*100:.1f}%" for c in sensitivity.columns]
+    values = sensitivity.values
 
     apply_style()
     fig, ax = plt.subplots(figsize=(14, 8))

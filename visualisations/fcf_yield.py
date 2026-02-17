@@ -19,19 +19,21 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from visualisations.chart_style import (
     COLORS, create_figure, add_source_footer, save_chart, load_company_config,
+    get_output_dirs,
 )
 
 
 def plot_fcf_yield(output_dir="reports/charts"):
     """Chart 7: FCF yield over time."""
     _, ticker = load_company_config()
+    raw_dir, processed_dir = get_output_dirs()
     prices = pd.read_csv(
-        PROJECT_ROOT / "data" / "raw" / f"{ticker.lower()}_price_history.csv",
+        raw_dir / f"{ticker.lower()}_price_history.csv",
         index_col=0, parse_dates=True,
     )
     prices.index = pd.to_datetime(prices.index, utc=True).tz_localize(None)
     financials = pd.read_csv(
-        PROJECT_ROOT / "data" / "processed" / "financials_annual.csv",
+        processed_dir / "financials_annual.csv",
         index_col=0, parse_dates=True,
     )
 

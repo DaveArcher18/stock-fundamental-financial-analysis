@@ -21,13 +21,15 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from visualisations.chart_style import (
     COLORS, create_figure, add_source_footer, save_chart,
     format_billions, apply_style, load_company_config,
+    get_output_dirs,
 )
 
 
 def plot_revenue_growth(output_dir="reports/charts"):
     """Chart 3: Revenue bars with growth overlay."""
+    _, processed_dir = get_output_dirs()
     financials = pd.read_csv(
-        PROJECT_ROOT / "data" / "processed" / "financials_annual.csv",
+        processed_dir / "financials_annual.csv",
         index_col=0, parse_dates=True,
     )
 

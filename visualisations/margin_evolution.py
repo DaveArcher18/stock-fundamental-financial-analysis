@@ -19,13 +19,15 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from visualisations.chart_style import (
     COLORS, create_figure, add_source_footer, save_chart, load_company_config,
+    get_output_dirs,
 )
 
 
 def plot_margin_evolution(output_dir="reports/charts"):
     """Chart 5: Margin progression — gross, operating, net."""
+    _, processed_dir = get_output_dirs()
     ratios = pd.read_csv(
-        PROJECT_ROOT / "data" / "processed" / "financial_ratios.csv", index_col=0,
+        processed_dir / "financial_ratios.csv", index_col=0,
     )
 
     years = ratios["fiscal_year"].astype(int).values

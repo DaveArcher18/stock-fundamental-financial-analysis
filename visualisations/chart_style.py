@@ -31,6 +31,23 @@ def load_company_config() -> tuple[str, str]:
     ticker = company.get("ticker", "UNKNOWN")
     return name, ticker
 
+
+def get_output_dirs() -> tuple[Path, Path]:
+    """Return per-company (raw_dir, processed_dir) paths.
+
+    Reads the ticker from assumptions.yaml and resolves:
+        output/{TICKER}/data/raw/
+        output/{TICKER}/data/processed/
+
+    Returns
+    -------
+    tuple[Path, Path]
+        (raw_dir, processed_dir)
+    """
+    _, ticker = load_company_config()
+    base = PROJECT_ROOT / "output" / ticker.upper()
+    return base / "data" / "raw", base / "data" / "processed"
+
 # ═══════════════════════════════════════════════════════════════════════════
 # Colour Palette
 # ═══════════════════════════════════════════════════════════════════════════

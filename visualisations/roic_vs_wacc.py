@@ -19,13 +19,15 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from visualisations.chart_style import (
     COLORS, create_figure, add_source_footer, save_chart, load_company_config,
+    get_output_dirs,
 )
 
 
 def plot_roic_vs_wacc(output_dir="reports/charts"):
     """Chart 6: ROIC vs WACC bar chart with economic spread."""
+    _, processed_dir = get_output_dirs()
     roic_df = pd.read_csv(
-        PROJECT_ROOT / "data" / "processed" / "roic_analysis.csv", index_col=0,
+        processed_dir / "roic_analysis.csv", index_col=0,
     )
 
     years = roic_df["fiscal_year"].astype(int).values

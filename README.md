@@ -173,16 +173,37 @@ python main.py
 | Stage | What the pipeline does for Apple |
 |-------|----------------------------------|
 | **1. Config** | Reads `AAPL` as ticker, `Apple Inc.` as company name |
-| **2. Extract** | Downloads `aapl_price_history.csv` and `aapl_company_info.csv` via yfinance; pulls 10-year financials from SEC EDGAR using CIK `0000320193` |
-| **3. Analysis** | Computes Apple's margins, ROIC, working capital ratios from the downloaded financials |
+| **2. Extract** | Downloads price history + company info via yfinance; pulls 10-year financials from SEC EDGAR — all saved to `output/AAPL/data/raw/` |
+| **3. Analysis** | Computes Apple's margins, ROIC, working capital → `output/AAPL/data/processed/` |
 | **4. WACC** | Calculates Apple's cost of capital using β=1.20, D/C=25%, etc. |
-| **5. DCF** | Projects Apple's FCFF using your growth/margin assumptions → intrinsic value per share |
-| **6. Sensitivity** | Growth × WACC two-way tables centred on Apple's current price |
+| **5. DCF** | Projects Apple's FCFF → intrinsic value per share |
+| **6. Sensitivity** | Growth × WACC two-way tables → `output/AAPL/data/processed/` |
 | **7. Reverse DCF** | "What growth does the market imply at Apple's current price?" |
-| **8. Report** | Generates `reports/aapl_valuation_report.md` |
-| **9. Charts** | Generates 8 PNGs in `reports/charts/` with titles like *"Apple Inc. — Trailing P/E Ratio"* |
+| **8. Report** | Generates `output/AAPL/reports/aapl_valuation_report.md` |
+| **9. Charts** | Generates 8 PNGs in `output/AAPL/reports/charts/` |
 
-All output files use the ticker prefix: `aapl_price_history.csv`, `aapl_company_info.csv`, `aapl_valuation_report.md`.
+### Output Structure
+
+Each company gets its own isolated folder:
+
+```
+output/
+├── AAPL/
+│   ├── data/
+│   │   ├── raw/           ← price history, company info, XBRL JSON
+│   │   └── processed/     ← financials, ratios, DCF projections, sensitivity
+│   └── reports/
+│       ├── charts/        ← 8 visualisation PNGs
+│       └── aapl_valuation_report.md
+├── ASML/
+│   ├── data/
+│   │   ├── raw/
+│   │   └── processed/
+│   └── reports/
+│       ├── charts/
+│       └── asml_valuation_report.md
+└── ...
+```
 
 > [!NOTE]
 > **Narrative zones** (the shaded "Hidden Champion → EUV Inflection → Premium Monopoly" arcs on time-series charts) are ASML-specific story arcs defined in `chart_style.py`. They'll still appear on other companies but won't be semantically meaningful. Making these configurable per-company via `assumptions.yaml` is a planned enhancement.

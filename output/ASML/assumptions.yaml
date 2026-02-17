@@ -1,0 +1,116 @@
+# =============================================================================
+# ASML Valuation — Central Assumptions File
+# =============================================================================
+# All tuneable parameters live here. No hardcoded values in Python code.
+# Modify this file to run different scenarios without changing any code.
+#
+# CALIBRATION NOTES (Feb 2026):
+#   • Revenue growth: Based on ASML Investor Day (Nov 2024) guidance of
+#     €44–60B by 2030, FY2025 actual of €32.7B, and FY2026 guidance of
+#     €34–39B.  Near-term rates reflect consensus + company guidance.
+#   • Margins: Operating margin target derived from 2030 gross margin
+#     guidance (56–60%) less R&D (~13%) and SG&A (~4%) intensity.
+#   • Capital intensity: Calibrated to 3-year actual averages from SEC
+#     XBRL data (capex/rev 7.1%, D&A/rev 2.9%).
+#   • Tax: Effective rate trending up (16.3% 3y avg → 18.2% in 2024)
+#     due to Dutch tax reform and global minimum tax (Pillar Two).
+#   • Beta: Using 1.10 (analyst judgement) vs 1.46 (Yahoo Finance).
+#     Lower beta reflects ASML's monopoly position and structural demand.
+# =============================================================================
+
+# --- Company Identification ---
+company:
+  name: "ASML Holding N.V."
+  ticker: "ASML"
+  currency: "EUR"
+  fiscal_year_end: "December"
+
+# --- Tax ---
+tax:
+  effective_rate: 0.17            # Blended estimate: 16.3% historical → 18.2% rising
+  marginal_rate: 0.256            # Dutch statutory rate (25.8% from 2022)
+
+# --- Cost of Capital (WACC Inputs) ---
+cost_of_capital:
+  risk_free_rate: 0.03            # 10y German Bund yield (~3.0% as of Feb 2026)
+  equity_risk_premium: 0.05       # Mature market ERP (Damodaran)
+  beta: 1.10                      # Levered beta — conservative vs 1.46 market
+  country_risk_premium: 0.0       # Netherlands = 0 (AAA-rated developed market)
+  pre_tax_cost_of_debt: 0.035     # Implied from data: 3.2% 3y avg, rising to ~4.4%
+  target_debt_to_capital: 0.01    # Actual D/(D+E) is 0.7% — ASML uses minimal leverage
+
+# --- Projection Horizon ---
+projection:
+  explicit_years: 10              # 10-year explicit forecast
+  terminal_growth_rate: 0.025     # g∞ — long-run nominal growth (≈ EUR GDP)
+
+# --- Revenue Drivers ---
+# Near-term rates: company guidance + consensus through FY2030
+# Then fade to long-term rate for years 6–10
+#
+# Path to ASML's €52B midpoint target by 2030 (from €28.3B base):
+#   FY2025: €32.7B (+15.5%) — actual reported
+#   FY2026: €36.5B (+11.6%) — midpoint of €34–39B guidance
+#   FY2027: €42.0B (+15.1%) — consensus: High-NA EUV ramp + 2nm transition
+#   FY2028: €48.0B (+14.3%) — continued AI/advanced node capex
+#   FY2029: €52.0B (+8.3%)  — approaching ASML 2030 midpoint target
+revenue:
+  base_year_revenue: null         # Populated from financial data (€28.3B)
+  near_term_growth_rates:         # Year-by-year overrides for years 1–5
+    - 0.155                       # Yr 1 (FY2025): +15.5% — actual
+    - 0.116                       # Yr 2 (FY2026): +11.6% — midpoint guidance
+    - 0.151                       # Yr 3 (FY2027): +15.1% — High-NA + 2nm
+    - 0.143                       # Yr 4 (FY2028): +14.3% — AI capex wave
+    - 0.083                       # Yr 5 (FY2029): +8.3%  — maturation
+  long_term_growth_rate: 0.06     # Yr 6–10: secular semi growth (~6% nominal)
+
+# --- Margin Assumptions ---
+# ASML 2030 gross margin target: 56–60%
+# Operating margin = gross margin − R&D (~13%) − SG&A (~4%) ≈ 38–43%
+# Using midpoint of 38% as target (conservative — leaves room for scale)
+margins:
+  gross_margin: 0.56              # 2030 midpoint of 56–60% guidance
+  operating_margin: 0.38          # Gross margin − R&D − SG&A
+  rd_to_revenue: 0.13            # R&D intensity (stable historically)
+  sga_to_revenue: 0.04           # SG&A intensity (slight leverage at scale)
+
+# --- Capital Intensity ---
+# Calibrated to 3-year SEC data averages:
+#   Capex/Rev: 7.1% (elevated vs historical 5.9% — capacity buildout phase)
+#   D&A/Rev:   2.9% (trending up with higher installed asset base)
+#   NWC/Rev:   As a *level*, NWC/Rev is ~43%, but for ΔNWC we use the
+#              marginal rate (~15–18%) since not all NWC scales linearly.
+capital_intensity:
+  capex_to_revenue: 0.07          # Elevated phase — capacity buildout for High-NA
+  depreciation_to_revenue: 0.03   # Aligns with 3y actual average
+  nwc_to_revenue: 0.17            # Marginal NWC/ΔRevenue (not level NWC/Revenue)
+
+# --- Working Capital Days ---
+# Calibrated to actual data (ASML has very long build cycles → high DIO)
+working_capital_days:
+  dso: 58                         # Actual FY2024
+  dio: 289                        # ~10 months — EUV systems take 6–12mo to build
+  dpo: 93                         # Actual FY2024 (improved payment terms)
+
+# --- ROIC ---
+roic:
+  capitalize_rd: false
+  rd_amortization_years: 5
+
+# --- Sensitivity Ranges ---
+sensitivity:
+  wacc_range: [0.07, 0.075, 0.08, 0.085, 0.09, 0.095, 0.10, 0.105, 0.11]
+  terminal_growth_range: [0.015, 0.020, 0.025, 0.030, 0.035]
+
+# --- Market Data ---
+market_data:
+  price_start_date: "2000-01-01"
+  benchmark_ticker: "^AEX"        # Amsterdam Exchange Index for beta estimation
+
+# --- SEC EDGAR ---
+sec:
+  cik: "0000937966"
+  user_agent: "ASMLValuation research@example.com"
+  base_url: "https://data.sec.gov/api/xbrl/companyfacts"
+  annual_forms: ["20-F", "20-F/A", "10-K", "10-K/A"]
+  years_to_keep: 10
