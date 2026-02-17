@@ -1,4 +1,5 @@
 """
+# NOTE: _safe_col() added to handle cross-company SEC XBRL column variation
 Models — Discounted Cash Flow (DCF) Valuation
 ===============================================
 Projects Free Cash Flow to the Firm (FCFF), computes terminal value via
@@ -379,6 +380,7 @@ def run_dcf(
     wacc_rate: float,
     market_cap_usd: float = None,
     usd_eur_rate: float = 0.92,
+    market_data_shares: float = None,
 ) -> dict:
     """Run the full DCF valuation pipeline.
 
@@ -403,15 +405,36 @@ def run_dcf(
     """
     latest = financials.iloc[-1]
 
+    # ── Safe column access (handles cross-company XBRL variation) ─────
+    def _safe_col(row, primary, fallbacks=None, default=0.0):
+        """Get column value with fallback chain."""
+        if primary in row.index and pd.notna(row[primary]):
+            return row[primary]
+        for fb in (fallbacks or []):
+            if fb in row.index and pd.notna(row[fb]):
+                return row[fb]
+        return default
+
     # ── Extract base-year data ────────────────────────────────────────
     base_revenue = latest["revenue"]
-    cash = latest["cash"]
-    total_debt = latest["long_term_debt"]
+    cash = _safe_col(latest, "cash", ["cash_and_equivalents"], 0.0)
+    total_debt = _safe_col(latest, "long_term_debt", ["total_debt", "debt_current"], 0.0)
     net_debt = total_debt - cash
-    shares = latest["shares_outstanding"]
+    shares = _safe_col(latest, "shares_outstanding",
+                       ["shares_outstanding_basic", "common_shares_outstanding"],
+                       default=None)
+    if (shares is None or shares <= 0) and market_data_shares:
+        shares = market_data_shares
+    if shares is None or shares <= 0:
+        raise ValueError("Cannot determine shares outstanding from SEC data or market data")
 
     # Current margins (for fade starting point)
-    current_op_margin = latest["operating_income"] / latest["revenue"]
+    op_income = _safe_col(latest, "operating_income",
+                          ["income_from_operations"], default=None)
+    if op_income is None or base_revenue == 0:
+        current_op_margin = config["margins"]["operating_margin"]
+    else:
+        current_op_margin = op_income / base_revenue
 
     # ── Config parameters ─────────────────────────────────────────────
     proj = config["projection"]

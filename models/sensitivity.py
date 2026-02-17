@@ -172,12 +172,26 @@ def _dcf_value_per_share(
 
     latest = financials.iloc[-1]
     base_revenue = latest["revenue"]
-    cash = latest["cash"]
-    total_debt = latest["long_term_debt"]
-    net_debt = total_debt - cash
-    shares = latest["shares_outstanding"]
 
-    current_op_margin = latest["operating_income"] / latest["revenue"]
+    # Safe column access for cross-company XBRL variation
+    def _get(key, fallbacks=None, default=0.0):
+        if key in latest.index and pd.notna(latest[key]):
+            return latest[key]
+        for fb in (fallbacks or []):
+            if fb in latest.index and pd.notna(latest[fb]):
+                return latest[fb]
+        return default
+
+    cash = _get("cash", ["cash_and_equivalents"])
+    total_debt = _get("long_term_debt", ["total_debt", "debt_current"])
+    net_debt = total_debt - cash
+    shares = _get("shares_outstanding", ["shares_outstanding_basic", "common_shares_outstanding"])
+
+    op_inc = _get("operating_income", ["income_from_operations"], default=None)
+    if op_inc is None or base_revenue == 0:
+        current_op_margin = operating_margin  # use the passed-in parameter
+    else:
+        current_op_margin = op_inc / base_revenue
 
     growth_schedule = [growth_rate] * explicit_years
 
@@ -299,9 +313,12 @@ def print_tornado(tornado_df: pd.DataFrame, title: str = "TORNADO ANALYSIS") -> 
         else:
             range_str = f"{lv} → {hv}"
 
-        # ASCII bar
+        # ASCII bar — skip NaN swings
         bar_width = 30
-        bar_len = int(swing / max_swing * bar_width) if max_swing > 0 else 0
+        if pd.isna(swing) or pd.isna(max_swing) or max_swing <= 0:
+            bar_len = 0
+        else:
+            bar_len = int(swing / max_swing * bar_width)
         bar = "█" * bar_len
 
         low_str = f"€{low_r:,.0f}"
@@ -356,11 +373,16 @@ if __name__ == "__main__":
         "nwc_to_revenue": config["capital_intensity"]["nwc_to_revenue"],
     }
 
-    base_vps = _dcf_value_per_share(**base_params)
-    market_price_eur = (market_cap_usd * 0.92) / financials.iloc[-1]["shares_outstanding"]
+    # Safe shares lookup
+    latest = financials.iloc[-1]
+    shares = latest.get("shares_outstanding",
+             latest.get("shares_outstanding_basic",
+             latest.get("common_shares_outstanding", 1)))
+    market_price_eur = (market_cap_usd * 0.92) / shares
 
+    company_name = config.get("company", {}).get("name", "COMPANY")
     print(f"\n{'═' * 72}")
-    print(f"  SENSITIVITY ANALYSIS — ASML DCF")
+    print(f"  SENSITIVITY ANALYSIS — {company_name} DCF")
     print(f"{'═' * 72}")
     print(f"\n  Base case value/share: €{base_vps:,.0f}")
     print(f"  Current market price:  ~€{market_price_eur:,.0f}  (est. EUR)")

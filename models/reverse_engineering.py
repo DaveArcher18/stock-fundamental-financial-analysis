@@ -372,14 +372,20 @@ if __name__ == "__main__":
     )
     base_wacc = wacc_result["wacc"]
 
-    # Market price in EUR
+    # Market price in EUR — safe column access
     usd_eur = 0.92
-    shares = financials.iloc[-1]["shares_outstanding"]
+    latest = financials.iloc[-1]
+    shares = latest.get("shares_outstanding",
+             latest.get("shares_outstanding_basic",
+             latest.get("common_shares_outstanding", 1)))
     market_cap_eur = market_cap_usd * usd_eur
     market_price_eur = market_cap_eur / shares
 
-    latest = financials.iloc[-1]
-    net_debt = latest["long_term_debt"] - latest["cash"]
+    debt = latest.get("long_term_debt", latest.get("total_debt", latest.get("debt_current", 0.0)))
+    cash = latest.get("cash", latest.get("cash_and_equivalents", 0.0))
+    if pd.isna(debt): debt = 0.0
+    if pd.isna(cash): cash = 0.0
+    net_debt = debt - cash
     ev_eur = market_cap_eur + net_debt  # neg net_debt →  net cash reduces EV
 
     print(f"\n  Solving for market-implied parameters...")

@@ -53,6 +53,22 @@ def _load_all_data() -> dict:
     data["financials"] = pd.read_csv(
         processed_dir / "financials_annual.csv", index_col=0, parse_dates=True,
     )
+    # Patch missing columns for robustness
+    df = data["financials"]
+    if "gross_profit" not in df.columns:
+        if "cost_of_revenue" in df.columns:
+            df["gross_profit"] = df["revenue"] - df["cost_of_revenue"]
+        else:
+            df["gross_profit"] = np.nan
+
+    if "operating_income" not in df.columns:
+        # Try to calculate OpInc = Revenue - COGS - RD - SGA
+        # If any component is missing, it will result in NaN, which is handled
+        cogs = df.get("cost_of_revenue", 0)
+        rd = df.get("rd_expense", 0)
+        sga = df.get("sga_expense", 0)
+        df["operating_income"] = df["revenue"] - cogs - rd - sga
+
     data["ratios"] = pd.read_csv(processed_dir / "financial_ratios.csv", index_col=0)
     data["roic"] = pd.read_csv(processed_dir / "roic_analysis.csv", index_col=0)
     data["working_capital"] = pd.read_csv(processed_dir / "working_capital.csv", index_col=0)
@@ -101,7 +117,8 @@ def _header(data: dict) -> str:
     wacc_rate = wacc_result["wacc"]
 
     from models.dcf import run_dcf
-    dcf_result = run_dcf(config, fin, wacc_rate, market_cap_usd)
+    market_shares = float(info.get("shares_outstanding", 0))
+    dcf_result = run_dcf(config, fin, wacc_rate, market_cap_usd, market_data_shares=market_shares)
     eq = dcf_result["equity"]
     ev = dcf_result["ev"]
     mkt = dcf_result.get("market", {})
@@ -120,12 +137,18 @@ def _header(data: dict) -> str:
     today = datetime.now().strftime("%B %d, %Y")
 
     lines = []
-    lines.append(f"# ASML Holding N.V. — Equity Valuation Report")
+    company_name = config.get("company", {}).get("name", "Company")
+    ticker = config.get("company", {}).get("ticker", "TICKER")
+    sector = info.get("sector", "Sector")
+    industry = info.get("industry", "Industry")
+    
+    lines = []
+    lines.append(f"# {company_name} — Equity Valuation Report")
     lines.append(f"")
     lines.append(f"**Date:** {today}  ")
-    lines.append(f"**Ticker:** ASML (Euronext Amsterdam / NASDAQ)  ")
-    lines.append(f"**Sector:** {info.get('sector', 'Technology')} — {info.get('industry', 'Semiconductor Equipment')}  ")
-    lines.append(f"**Currency:** EUR (financials) / USD (ADR listing)  ")
+    lines.append(f"**Ticker:** {ticker}  ")
+    lines.append(f"**Sector:** {sector} — {industry}  ")
+    lines.append(f"**Currency:** {config.get('company', {}).get('currency', 'USD')}  ")
     lines.append(f"")
     lines.append(f"---")
     lines.append(f"")
@@ -168,10 +191,7 @@ def _business_overview(data: dict) -> str:
     lines = []
     lines.append(f"## 1. Business Overview")
     lines.append(f"")
-    lines.append(f"ASML is the world's sole manufacturer of extreme ultraviolet (EUV) lithography systems, "
-                 f"which are essential for producing the most advanced semiconductor chips at 7nm and below. "
-                 f"The company holds a near-monopoly position in lithography equipment, serving all major "
-                 f"chipmakers including TSMC, Samsung, and Intel.")
+    lines.append(f"_{data['config'].get('company', {}).get('name', 'Company')} is a leading company in the {info.get('sector', 'Technology')} sector._")
     lines.append(f"")
     lines.append(f"**Latest fiscal year (FY{int(latest['fiscal_year'])}):**")
     lines.append(f"- Revenue: €{rev:.1f}B")
@@ -439,7 +459,17 @@ def _sensitivity_section(data: dict) -> str:
         lines.append(f"")
 
         # Format as markdown table
-        cols = [f"{float(c)*100:.1f}%" for c in table.columns]
+        cols = []
+        valid_cols = []
+        for c in table.columns:
+            try:
+                val = float(c)
+                cols.append(f"{val*100:.1f}%")
+                valid_cols.append(c)
+            except ValueError:
+                continue
+        
+        table = table[valid_cols]
         header = "| WACC \\ g∞ | " + " | ".join(cols) + " |"
         sep = "|---:" + "|---:" * len(cols) + "|"
         lines.append(header)
@@ -458,7 +488,17 @@ def _sensitivity_section(data: dict) -> str:
         lines.append(f"### Revenue Growth × WACC (Value / Share)")
         lines.append(f"")
 
-        cols = [f"{float(c)*100:.1f}%" for c in table.columns]
+        cols = []
+        valid_cols = []
+        for c in table.columns:
+            try:
+                val = float(c)
+                cols.append(f"{val*100:.1f}%")
+                valid_cols.append(c)
+            except ValueError:
+                continue
+        
+        table = table[valid_cols]
         header = "| Growth \\ WACC | " + " | ".join(cols) + " |"
         sep = "|---:" + "|---:" * len(cols) + "|"
         lines.append(header)
@@ -616,21 +656,33 @@ def _methodology(data: dict) -> str:
 
 
 def generate_report() -> str:
-    """Generate the full valuation report as Markdown."""
+    """Generate the full Markdown report."""
     data = _load_all_data()
 
+    header = _header(data)
+    business_overview = _business_overview(data)
+    historical_financials = _historical_financials(data)
+    roic_analysis = _roic_analysis(data)
+    working_capital = _working_capital(data)
+    wacc_section = _wacc_section(data)
+    dcf_section = _dcf_section(data)
+    sensitivity_section = _sensitivity_section(data)
+    reverse_dcf_section = _reverse_dcf_section(data)
+    risks_and_catalysts = _risks_and_catalysts(data)
+    methodology = _methodology(data)
+
     sections = [
-        _header(data),
-        _business_overview(data),
-        _historical_financials(data),
-        _roic_analysis(data),
-        _working_capital(data),
-        _wacc_section(data),
-        _dcf_section(data),
-        _sensitivity_section(data),
-        _reverse_dcf_section(data),
-        _risks_and_catalysts(data),
-        _methodology(data),
+        header,
+        business_overview,
+        historical_financials,
+        roic_analysis,
+        working_capital,
+        wacc_section,
+        dcf_section,
+        sensitivity_section,
+        reverse_dcf_section,
+        risks_and_catalysts,
+        methodology,
     ]
 
     return "\n".join(sections)

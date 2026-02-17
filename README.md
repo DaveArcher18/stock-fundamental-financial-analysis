@@ -117,6 +117,25 @@ python main.py --skip-extract
 python -m visualisations.generate_all
 ```
 
+### 4. Run S&P 500 Top 10
+
+To analyse the top 10 largest US companies in one go:
+
+```bash
+python run_top10.py
+```
+
+This script:
+1. Backs up your current `config/assumptions.yaml`
+2. Iterates through AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, AVGO, LLY, BRK-B
+3. Generates a full report and charts for each in `output/{TICKER}/`
+4. Restores your original config
+
+To run specific companies:
+```bash
+python run_top10.py AAPL NVDA
+```
+
 ---
 
 ## Analysing a Different Company
@@ -319,6 +338,16 @@ Modify this file to run different scenarios — no code changes required.
 | ROIC vs WACC | `reports/charts/06_roic_vs_wacc.png` |
 | FCF yield | `reports/charts/07_fcf_yield.png` |
 | Sensitivity heatmap | `reports/charts/08_sensitivity_heatmap.png` |
+
+---
+
+## Known Limitations
+
+| Company | Limitation |
+|---|---|
+| **Berkshire Hathaway (BRK-B)** | The DCF model assumes a single operating business. It does not account for Berkshire's insurance float or investment portfolio, leading to structurally inaccurate valuations. |
+| **Broadcom (AVGO)** | Specific SEC XBRL tags (e.g., `interest_expense`) may be missing from recent filings, causing gaps in WACC calculation. The pipeline estimates missing values where possible but results may vary. |
+| **Tesla (TSLA)** | The model values Tesla on current automotive/energy fundamentals. It does not price in "option value" for Robotaxi or Optimus, often resulting in a divergence from market pricing. |
 
 ---
 

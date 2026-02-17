@@ -191,8 +191,19 @@ def derive_cost_of_debt_from_data(
     """
     recent = financials.tail(lookback_years)
 
+    # Safe access — some companies report debt under different XBRL tags
+    if "interest_expense" not in recent.columns:
+        return 0.03  # fallback
     interest = recent["interest_expense"].mean()
-    debt = recent["long_term_debt"].mean()
+
+    debt_col = None
+    for col in ["long_term_debt", "total_debt", "debt_current"]:
+        if col in recent.columns:
+            debt_col = col
+            break
+    if debt_col is None:
+        return 0.03  # fallback
+    debt = recent[debt_col].mean()
 
     if debt <= 0 or pd.isna(interest):
         return 0.03  # fallback to config default
@@ -264,7 +275,13 @@ def derive_capital_structure(
         ``debt_weight``.
     """
     latest = financials.iloc[-1]
-    total_debt = latest["long_term_debt"]
+
+    # Safe access — BRK-B and others may not report long_term_debt
+    total_debt = 0.0
+    for col in ["long_term_debt", "total_debt", "debt_current"]:
+        if col in latest.index and pd.notna(latest[col]):
+            total_debt = latest[col]
+            break
 
     market_cap_eur = market_cap_usd * usd_eur_rate
     enterprise_value = market_cap_eur + total_debt

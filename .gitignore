@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environments
+.env
+.venv/
+venv/
+env/
+
+# Mac
+.DS_Store
+
+# Data (exclude large datasets)
+data/raw/
+data/interim/
+data/processed/
+
+# Pipeline Output
+# Exclude raw/processed data for each company to save space
+output/**/data/
+
+# Keep reports and charts!
+# (output/*/reports/ will be committed)
+
+# IDE
+.vscode/
+.idea/
+
+# Checkpoints/Backups
+config/assumptions.yaml.backup
+*.log

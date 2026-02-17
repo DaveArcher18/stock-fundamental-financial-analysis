@@ -35,6 +35,21 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 CONFIG_PATH = PROJECT_ROOT / "config" / "assumptions.yaml"
 
+
+def _safe_col(row_or_df, primary, fallbacks=None, default=0.0):
+    """Safe column access with fallback chain for cross-company XBRL variation."""
+    idx = row_or_df.index if hasattr(row_or_df, 'index') else row_or_df.columns
+    if primary in idx:
+        val = row_or_df[primary]
+        if not (hasattr(val, '__len__') and len(val) == 0):
+            return val
+    for fb in (fallbacks or []):
+        if fb in idx:
+            val = row_or_df[fb]
+            if not (hasattr(val, '__len__') and len(val) == 0):
+                return val
+    return default
+
 # Per-company output dirs — set after config is loaded in main()
 OUTPUT_DIR: Path = None   # output/{TICKER}/
 RAW_DIR: Path = None      # output/{TICKER}/data/raw/
@@ -105,6 +120,23 @@ def _load_market_cap(config: dict) -> float:
         )
     info = pd.read_csv(path)
     return float(info[info["field"] == "market_cap"]["value"].values[0])
+
+
+def _load_market_shares(config: dict) -> float:
+    """Load shares outstanding from company info CSV (Yahoo Finance)."""
+    ticker = config.get("company", {}).get("ticker", "ASML").lower()
+    path = RAW_DIR / f"{ticker}_company_info.csv"
+    if not path.exists():
+        return None
+    info = pd.read_csv(path)
+    rows = info[info["field"] == "shares_outstanding"]
+    if rows.empty:
+        return None
+    val = rows["value"].values[0]
+    try:
+        return float(val)
+    except (ValueError, TypeError):
+        return None
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -241,12 +273,14 @@ def stage_5_dcf(config: dict, wacc_rate: float) -> dict:
 
     financials = _load_financials()
     market_cap_usd = _load_market_cap(config)
+    market_shares = _load_market_shares(config)
 
     result = run_dcf(
         config=config,
         financials=financials,
         wacc_rate=wacc_rate,
         market_cap_usd=market_cap_usd,
+        market_data_shares=market_shares,
     )
     print_dcf_summary(result)
 
@@ -271,7 +305,9 @@ def stage_6_sensitivity(config: dict, wacc_rate: float) -> dict:
 
     financials = _load_financials()
     market_cap_usd = _load_market_cap(config)
-    shares = financials.iloc[-1]["shares_outstanding"]
+    latest = financials.iloc[-1]
+    shares = _safe_col(latest, "shares_outstanding",
+                       ["shares_outstanding_basic", "common_shares_outstanding"])
     market_price_eur = (market_cap_usd * 0.92) / shares
 
     base_params = {
@@ -392,11 +428,14 @@ def stage_7_reverse_dcf(config: dict, wacc_rate: float) -> dict:
     market_cap_usd = _load_market_cap(config)
 
     usd_eur = 0.92
-    shares = financials.iloc[-1]["shares_outstanding"]
+    latest = financials.iloc[-1]
+    shares = _safe_col(latest, "shares_outstanding",
+                       ["shares_outstanding_basic", "common_shares_outstanding"])
     market_cap_eur = market_cap_usd * usd_eur
     market_price_eur = market_cap_eur / shares
-    latest = financials.iloc[-1]
-    net_debt = latest["long_term_debt"] - latest["cash"]
+    debt = _safe_col(latest, "long_term_debt", ["total_debt", "debt_current"], 0.0)
+    cash = _safe_col(latest, "cash", ["cash_and_equivalents"], 0.0)
+    net_debt = debt - cash
     ev_eur = market_cap_eur + net_debt
 
     print(f"  Solving for market-implied parameters...\n")
@@ -426,7 +465,10 @@ def stage_7_reverse_dcf(config: dict, wacc_rate: float) -> dict:
             "terminal_growth": itg,
         },
         "base_revenue": latest["revenue"],
-        "current_op_margin": latest["operating_income"] / latest["revenue"],
+        "current_op_margin": (_safe_col(latest, "operating_income",
+                              ["income_from_operations"], 0.0) / latest["revenue"]
+                              if latest["revenue"] > 0
+                              else config["margins"]["operating_margin"]),
         "actual_wacc": wacc_rate,
         "config_tg": config["projection"]["terminal_growth_rate"],
     }

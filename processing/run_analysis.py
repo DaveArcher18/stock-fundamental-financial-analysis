@@ -86,15 +86,32 @@ def compute_margin_ratios(df: pd.DataFrame) -> pd.DataFrame:
     rev = df["revenue"]
 
     # ── Margins ───────────────────────────────────────────────────────
-    ratios["gross_margin"] = gross_margin(rev, df["cost_of_revenue"])
-    ratios["operating_margin"] = operating_margin(rev, df["operating_income"])
+    if "cost_of_revenue" in df.columns:
+        ratios["gross_margin"] = gross_margin(rev, df["cost_of_revenue"])
+    else:
+        ratios["gross_margin"] = np.nan
+
+    if "operating_income" in df.columns:
+        ratios["operating_margin"] = operating_margin(rev, df["operating_income"])
+    elif "net_income" in df.columns and "income_tax_expense" in df.columns:
+        # Approximate: operating_income ≈ net_income + tax
+        approx_oi = df["net_income"] + df["income_tax_expense"].abs()
+        ratios["operating_margin"] = operating_margin(rev, approx_oi)
+    else:
+        ratios["operating_margin"] = np.nan
     ratios["net_margin"] = net_margin(rev, df["net_income"])
 
     # ── Growth ────────────────────────────────────────────────────────
     ratios["revenue_growth"] = revenue_growth(rev)
 
-    # ── Efficiency ────────────────────────────────────────────────────
-    ratios["capex_to_revenue"] = capex_to_revenue(rev, df["capex"])
+    # Free Cash Flow
+    ocf = df.get("operating_cash_flow", pd.Series(0, index=df.index))
+    capex = df.get("capex", pd.Series(0, index=df.index))
+    fcf = ocf - capex
+
+    # ── Ratios & Metrics ──────────────────────────────────────────────────
+    ratios["fcf_conversion"] = fcf / df["net_income"]
+    ratios["capex_to_revenue"] = capex / rev
 
     if "rd_expense" in df.columns:
         ratios["rd_to_revenue"] = rd_to_revenue(rev, df["rd_expense"])
@@ -139,16 +156,19 @@ def compute_roic_analysis(
     roic_df["fiscal_year"] = df["fiscal_year"]
 
     # NOPAT = EBIT × (1 − t)
-    nopat = compute_nopat(df["operating_income"], tax_rate)
+    if "operating_income" in df.columns:
+        ebit = df["operating_income"]
+    elif "net_income" in df.columns and "income_tax_expense" in df.columns:
+        ebit = df["net_income"] + df["income_tax_expense"].abs()
+    else:
+        ebit = df["net_income"]
+    nopat = compute_nopat(ebit, tax_rate)
     roic_df["nopat"] = nopat
 
     # Invested Capital = Total Assets − Cash − AP
-    # (simplified — no short-term debt / current liabilities split needed)
-    invested_capital = (
-        df["total_assets"]
-        - df["cash"]
-        - df["accounts_payable"]
-    )
+    cash = df["cash"] if "cash" in df.columns else 0
+    ap = df["accounts_payable"] if "accounts_payable" in df.columns else 0
+    invested_capital = df["total_assets"] - cash - ap
     roic_df["invested_capital"] = invested_capital
 
     # ROIC = NOPAT_t / IC_{t-1}
@@ -180,6 +200,25 @@ def compute_working_capital_analysis(df: pd.DataFrame) -> pd.DataFrame:
     # The working capital module expects separate balance_sheet and
     # income_stmt DataFrames with the same index. We just pass the
     # unified DataFrame for both — it has all the required columns.
+    # Check required columns — skip working capital if missing key fields
+    required = ["accounts_receivable", "accounts_payable", "cost_of_revenue"]
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        print(f"  ⚠ Working capital analysis skipped (missing: {', '.join(missing)})")
+        # Return empty DataFrame with expected columns
+        wc = pd.DataFrame(
+            {"nwc": np.nan, "delta_nwc": np.nan, "dso": np.nan,
+             "dio": np.nan, "dpo": np.nan, "ccc": np.nan},
+            index=df.index,
+        )
+        wc.insert(0, "fiscal_year", df["fiscal_year"].values)
+        return wc
+
+    # If inventory is missing, zero it out (META, service companies)
+    if "inventory" not in df.columns:
+        df = df.copy()
+        df["inventory"] = 0
+
     wc = compute_working_capital_table(
         balance_sheet=df,
         income_stmt=df,
@@ -345,22 +384,29 @@ def print_key_insights(
         print(f"     → Within historical norms")
 
     # Working capital
-    ccc_latest = wc.iloc[-1]["ccc"]
-    inv_to_rev = latest["inventory"] / latest["revenue"] * 100
     print(f"\n  5. Working Capital")
-    print(f"     Cash Conversion Cycle: {ccc_latest:.0f} days")
-    print(f"     Inventory/Revenue:     {inv_to_rev:.1f}%")
-    if inv_to_rev > 30:
-        print(f"     → High inventory levels — typical for capital equipment with "
-              f"long build cycles")
+    ccc_latest = wc.iloc[-1]["ccc"]
+    if not np.isnan(ccc_latest):
+        print(f"     Cash Conversion Cycle: {ccc_latest:.0f} days")
+    if "inventory" in latest.index and pd.notna(latest.get("inventory")):
+        inv_to_rev = latest["inventory"] / latest["revenue"] * 100
+        print(f"     Inventory/Revenue:     {inv_to_rev:.1f}%")
+        if inv_to_rev > 30:
+            print(f"     → High inventory levels — typical for capital equipment with "
+                  f"long build cycles")
+    else:
+        print(f"     (No inventory — services/platform company)")
 
     # Share count
-    shares_first = df.iloc[0]["shares_outstanding"] / 1e6
-    shares_last = df.iloc[-1]["shares_outstanding"] / 1e6
-    shares_reduction = (1 - shares_last / shares_first) * 100
-    print(f"\n  6. Shareholder Returns")
-    print(f"     Shares outstanding: {shares_first:.0f}M → {shares_last:.0f}M "
-          f"({shares_reduction:.1f}% buyback)")
+    shares_col = "shares_outstanding" if "shares_outstanding" in df.columns else "shares_outstanding_basic"
+    if shares_col in df.columns:
+        shares_first = df.iloc[0][shares_col] / 1e6
+        shares_last = df.iloc[-1][shares_col] / 1e6
+        if shares_first > 0:
+            shares_reduction = (1 - shares_last / shares_first) * 100
+            print(f"\n  6. Shareholder Returns")
+            print(f"     Shares outstanding: {shares_first:.0f}M → {shares_last:.0f}M "
+                  f"({shares_reduction:.1f}% buyback)")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -390,10 +436,6 @@ def run_analysis(
         Dictionary containing ``ratios``, ``roic``, and ``working_capital``
         DataFrames.
     """
-    print("\n" + "═" * 72)
-    print("  ASML FINANCIAL ANALYSIS — SEC XBRL DATA")
-    print("═" * 72)
-
     # Load config
     cfg_path = PROJECT_ROOT / config_path
     config = {}
@@ -401,6 +443,11 @@ def run_analysis(
         with open(cfg_path, "r") as f:
             config = yaml.safe_load(f)
     tax_rate = config.get("tax", {}).get("effective_rate", 0.15)
+
+    company_name = config.get("company", {}).get("name", "COMPANY").upper()
+    print("\n" + "═" * 72)
+    print(f"  {company_name} FINANCIAL ANALYSIS — SEC XBRL DATA")
+    print("═" * 72)
 
     # Load data
     df = load_xbrl_financials(data_path)
