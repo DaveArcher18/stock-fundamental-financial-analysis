@@ -21,14 +21,15 @@ sys.path.insert(0, str(PROJECT_ROOT))
 from visualisations.chart_style import (
     COLORS, ACTS, KEY_EVENTS,
     create_figure, add_narrative_zones, add_event_annotations,
-    add_source_footer, save_chart, apply_style,
+    add_source_footer, save_chart, apply_style, load_company_config,
 )
 
 
 def _load_data():
     """Load price history and annual financials, normalising timezones."""
+    _, ticker = load_company_config()
     prices = pd.read_csv(
-        PROJECT_ROOT / "data" / "raw" / "asml_price_history.csv",
+        PROJECT_ROOT / "data" / "raw" / f"{ticker.lower()}_price_history.csv",
         index_col=0, parse_dates=True,
     )
     # Normalise tz-aware index from yfinance to tz-naive
@@ -122,7 +123,10 @@ def plot_pe_ratio(prices, financials, output_dir="reports/charts"):
                linestyle="--", alpha=0.7, label=f"Median P/E: {median_pe:.0f}x")
 
     # Labels
-    ax.set_title("ASML — Trailing P/E Ratio (2015–2026)", color=COLORS["navy"])
+    company_name, _ = load_company_config()
+    start_yr = pe.index.min().year
+    end_yr = pe.index.max().year
+    ax.set_title(f"{company_name} — Trailing P/E Ratio ({start_yr}–{end_yr})", color=COLORS["navy"])
     ax.set_ylabel("P/E Ratio (×)", color=COLORS["dark_text"])
     ax.set_xlabel("")
 
@@ -172,7 +176,10 @@ def plot_ev_ebitda(prices, financials, output_dir="reports/charts"):
                linestyle="--", alpha=0.7, label=f"Median: {median_val:.0f}×")
 
     # Labels
-    ax.set_title("ASML — Trailing EV/EBITDA (2015–2026)", color=COLORS["navy"])
+    company_name, _ = load_company_config()
+    start_yr = ev_ebitda.index.min().year
+    end_yr = ev_ebitda.index.max().year
+    ax.set_title(f"{company_name} — Trailing EV/EBITDA ({start_yr}–{end_yr})", color=COLORS["navy"])
     ax.set_ylabel("EV/EBITDA (×)", color=COLORS["dark_text"])
     ax.set_xlabel("")
     ax.set_ylim(0, min(ev_ebitda.quantile(0.98) * 1.1, 100))

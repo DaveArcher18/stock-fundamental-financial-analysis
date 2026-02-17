@@ -18,7 +18,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from visualisations.chart_style import (
-    COLORS, create_figure, add_source_footer, save_chart,
+    COLORS, create_figure, add_source_footer, save_chart, load_company_config,
 )
 
 
@@ -61,7 +61,8 @@ def plot_margin_evolution(output_dir="reports/charts"):
     ax.text(years[-1] + 0.5, 58, "2030 GM\ntarget\n56–60%", fontsize=7,
             color=COLORS["amber"], va="center", fontweight="bold")
 
-    ax.set_title("ASML — Margin Evolution", color=COLORS["navy"])
+    company_name, _ = load_company_config()
+    ax.set_title(f"{company_name} — Margin Evolution", color=COLORS["navy"])
     ax.set_ylabel("Margin (%)", color=COLORS["dark_text"])
     ax.set_ylim(0, 65)
     ax.set_xticks(years)

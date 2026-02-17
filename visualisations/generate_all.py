@@ -1,7 +1,7 @@
 """
 Generate All Visualisations
 ==============================
-CLI entry point for the full ASML valuation chart campaign.
+CLI entry point for the full valuation chart campaign.
 
 Usage:
     python -m visualisations.generate_all [--output-dir reports/charts]
@@ -25,17 +25,22 @@ import matplotlib
 matplotlib.use("Agg")  # Non-interactive backend
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Generate ASML visualisation campaign")
-    parser.add_argument("--output-dir", default="reports/charts",
-                        help="Output directory for chart PNGs")
-    args = parser.parse_args()
+def run_campaign(output_dir: str = None):
+    """Generate all 8 charts programmatically.
 
-    output_dir = str(PROJECT_ROOT / args.output_dir)
+    Parameters
+    ----------
+    output_dir : str | None
+        Directory for chart PNGs. Defaults to ``reports/charts``.
+    """
+    if output_dir is None:
+        output_dir = str(PROJECT_ROOT / "reports" / "charts")
+
+    from visualisations.chart_style import load_company_config
+    company_name, _ = load_company_config()
 
     print(f"\n{'═' * 60}")
-    print(f"  ASML VISUALISATION CAMPAIGN")
-    print(f"  'From Cheap Compounder to Premium Monopoly'")
+    print(f"  {company_name.upper()} VISUALISATION CAMPAIGN")
     print(f"{'═' * 60}\n")
 
     start = time.time()
@@ -97,5 +102,14 @@ def main():
     print(f"{'═' * 60}\n")
 
 
+def main():
+    parser = argparse.ArgumentParser(description="Generate visualisation campaign")
+    parser.add_argument("--output-dir", default=None,
+                        help="Output directory for chart PNGs (default: reports/charts)")
+    args = parser.parse_args()
+    run_campaign(output_dir=args.output_dir)
+
+
 if __name__ == "__main__":
     main()
+

@@ -1,7 +1,7 @@
 """
 Shared Design System — Chart Style
 ====================================
-Consistent aesthetics across all ASML valuation charts.
+Consistent aesthetics across all valuation charts.
 Publication-quality, FT/Economist-inspired.
 """
 
@@ -10,6 +10,26 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 import numpy as np
 from pathlib import Path
+import yaml
+
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+
+
+def load_company_config() -> tuple[str, str]:
+    """Load company name and ticker from assumptions.yaml.
+
+    Returns
+    -------
+    tuple[str, str]
+        (company_name, ticker)
+    """
+    config_path = PROJECT_ROOT / "config" / "assumptions.yaml"
+    with open(config_path) as f:
+        config = yaml.safe_load(f)
+    company = config.get("company", {})
+    name = company.get("name", company.get("ticker", "Company"))
+    ticker = company.get("ticker", "UNKNOWN")
+    return name, ticker
 
 # ═══════════════════════════════════════════════════════════════════════════
 # Colour Palette
@@ -67,7 +87,7 @@ KEY_EVENTS = [
 # ═══════════════════════════════════════════════════════════════════════════
 
 def apply_style():
-    """Apply the ASML chart style globally."""
+    """Apply the chart style globally."""
     plt.rcParams.update({
         # Figure
         "figure.facecolor": COLORS["white"],

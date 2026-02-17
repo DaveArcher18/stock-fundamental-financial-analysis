@@ -20,7 +20,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from visualisations.chart_style import (
     COLORS, create_figure, add_source_footer, save_chart,
-    format_billions, apply_style,
+    format_billions, apply_style, load_company_config,
 )
 
 
@@ -98,7 +98,8 @@ def plot_revenue_growth(output_dir="reports/charts"):
     ax2.set_ylim(g_min, g_max)
 
     # Title with CAGR
-    ax1.set_title(f"ASML — Revenue & Growth (FY{years[0]}–{years[-1]})\n"
+    company_name, _ = load_company_config()
+    ax1.set_title(f"{company_name} — Revenue & Growth (FY{years[0]}–{years[-1]})\n"
                   f"{n}-year CAGR: {cagr*100:.1f}%",
                   color=COLORS["navy"])
     ax1.set_xlabel("")

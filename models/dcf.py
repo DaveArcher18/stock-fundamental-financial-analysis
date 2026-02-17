@@ -606,8 +606,9 @@ if __name__ == "__main__":
     )
 
     # Load market cap
+    ticker = config.get("company", {}).get("ticker", "ASML").lower()
     company_info = pd.read_csv(
-        PROJECT_ROOT / "data" / "raw" / "asml_company_info.csv",
+        PROJECT_ROOT / "data" / "raw" / f"{ticker}_company_info.csv",
     )
     market_cap_usd = float(
         company_info[company_info["field"] == "market_cap"]["value"].values[0]

@@ -18,14 +18,15 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from visualisations.chart_style import (
-    COLORS, create_figure, add_source_footer, save_chart,
+    COLORS, create_figure, add_source_footer, save_chart, load_company_config,
 )
 
 
 def plot_fcf_yield(output_dir="reports/charts"):
     """Chart 7: FCF yield over time."""
+    _, ticker = load_company_config()
     prices = pd.read_csv(
-        PROJECT_ROOT / "data" / "raw" / "asml_price_history.csv",
+        PROJECT_ROOT / "data" / "raw" / f"{ticker.lower()}_price_history.csv",
         index_col=0, parse_dates=True,
     )
     prices.index = pd.to_datetime(prices.index, utc=True).tz_localize(None)
@@ -83,7 +84,8 @@ def plot_fcf_yield(output_dir="reports/charts"):
     ax.plot(years, trend, color=COLORS["navy"], linewidth=2,
             linestyle="--", alpha=0.5, label="Trend")
 
-    ax.set_title("ASML — Free Cash Flow Yield\n"
+    company_name, _ = load_company_config()
+    ax.set_title(f"{company_name} — Free Cash Flow Yield\n"
                  "(Operating CF − Capex) / Market Cap",
                  color=COLORS["navy"])
     ax.set_ylabel("FCF Yield (%)", color=COLORS["dark_text"])

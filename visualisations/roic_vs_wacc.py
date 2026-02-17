@@ -18,7 +18,7 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from visualisations.chart_style import (
-    COLORS, create_figure, add_source_footer, save_chart,
+    COLORS, create_figure, add_source_footer, save_chart, load_company_config,
 )
 
 
@@ -73,7 +73,8 @@ def plot_roic_vs_wacc(output_dir="reports/charts"):
                 bbox=dict(boxstyle="round,pad=0.3", facecolor=COLORS["white"],
                           edgecolor=COLORS["green"], alpha=0.9))
 
-    ax.set_title("ASML — ROIC vs. Cost of Capital", color=COLORS["navy"])
+    company_name, _ = load_company_config()
+    ax.set_title(f"{company_name} — ROIC vs. Cost of Capital", color=COLORS["navy"])
     ax.set_ylabel("Return / Cost (%)", color=COLORS["dark_text"])
     ax.set_xticks(x)
     ax.set_xticklabels([str(y) for y in years], rotation=45, ha="right")

@@ -73,9 +73,10 @@ def _load_financials() -> pd.DataFrame:
     return pd.read_csv(path, index_col=0, parse_dates=True)
 
 
-def _load_market_cap() -> float:
+def _load_market_cap(config: dict) -> float:
     """Load market cap from company info CSV."""
-    path = RAW_DIR / "asml_company_info.csv"
+    ticker = config.get("company", {}).get("ticker", "ASML").lower()
+    path = RAW_DIR / f"{ticker}_company_info.csv"
     if not path.exists():
         raise FileNotFoundError(
             f"No company info at {path}. "
@@ -175,7 +176,7 @@ def stage_4_wacc(config: dict) -> dict:
     )
 
     financials = _load_financials()
-    market_cap_usd = _load_market_cap()
+    market_cap_usd = _load_market_cap(config)
 
     # Config-driven
     config_wacc = compute_wacc_from_config(config)
@@ -211,7 +212,7 @@ def stage_5_dcf(config: dict, wacc_rate: float) -> dict:
     from models.dcf import run_dcf, print_dcf_summary
 
     financials = _load_financials()
-    market_cap_usd = _load_market_cap()
+    market_cap_usd = _load_market_cap(config)
 
     result = run_dcf(
         config=config,
@@ -241,7 +242,7 @@ def stage_6_sensitivity(config: dict, wacc_rate: float) -> dict:
     )
 
     financials = _load_financials()
-    market_cap_usd = _load_market_cap()
+    market_cap_usd = _load_market_cap(config)
     shares = financials.iloc[-1]["shares_outstanding"]
     market_price_eur = (market_cap_usd * 0.92) / shares
 
@@ -360,7 +361,7 @@ def stage_7_reverse_dcf(config: dict, wacc_rate: float) -> dict:
     )
 
     financials = _load_financials()
-    market_cap_usd = _load_market_cap()
+    market_cap_usd = _load_market_cap(config)
 
     usd_eur = 0.92
     shares = financials.iloc[-1]["shares_outstanding"]
@@ -530,15 +531,19 @@ def main() -> None:
         "--skip-sensitivity", action="store_true",
         help="Skip sensitivity + reverse DCF (faster)",
     )
+    parser.add_argument(
+        "--skip-viz", action="store_true",
+        help="Skip chart / visualisation generation",
+    )
     args = parser.parse_args()
 
     start_time = time.time()
 
     print(f"\n{'═' * 72}")
-    print(f"  ╔══════════════════════════════════════════════════════╗")
-    print(f"  ║   ASML CORPORATE VALUATION FRAMEWORK                ║")
+    print(f"  ╔{'═' * 54}╗")
+    print(f"  ║   CORPORATE VALUATION FRAMEWORK                      ║")
     print(f"  ║   End-to-End Pipeline                               ║")
-    print(f"  ╚══════════════════════════════════════════════════════╝")
+    print(f"  ╚{'═' * 54}╝")
     print(f"{'═' * 72}")
 
     # ── Stage 1: Configuration ────────────────────────────────────────
@@ -587,13 +592,27 @@ def main() -> None:
         report = generate_report()
         reports_dir = PROJECT_ROOT / "reports"
         reports_dir.mkdir(parents=True, exist_ok=True)
-        report_path = reports_dir / "asml_valuation_report.md"
+        ticker = config.get("company", {}).get("ticker", "company").lower()
+        report_path = reports_dir / f"{ticker}_valuation_report.md"
         with open(report_path, "w") as f:
             f.write(report)
         print(f"  ✓ Report saved → {report_path}")
         print(f"    ({len(report):,} chars, {report.count(chr(10)):,} lines)")
     except Exception as e:
         print(f"  ⚠ Report generation failed: {e}")
+
+    # ── Stage 9: Visualisations ───────────────────────────────────────
+    if not args.skip_viz:
+        _banner("VISUALISATIONS", 9)
+        print(f"  Generating valuation charts...")
+        try:
+            from visualisations.generate_all import run_campaign
+            run_campaign()
+        except Exception as e:
+            print(f"  ⚠ Chart generation failed: {e}")
+    else:
+        _banner("VISUALISATIONS (SKIPPED)", 9)
+        print("  → Run without --skip-viz for charts")
 
     elapsed = time.time() - start_time
     print(f"\n  Total runtime: {elapsed:.1f}s\n")

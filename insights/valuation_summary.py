@@ -63,8 +63,12 @@ def _load_all_data() -> dict:
         if path.exists():
             data[name] = pd.read_csv(path, index_col=0)
 
-    # Company info
-    info_path = RAW_DIR / "asml_company_info.csv"
+    # Company info — derive filename from config ticker
+    import yaml as _yaml
+    with open(PROJECT_ROOT / "config" / "assumptions.yaml") as _f:
+        _cfg = _yaml.safe_load(_f)
+    _ticker = _cfg.get("company", {}).get("ticker", "company").lower()
+    info_path = RAW_DIR / f"{_ticker}_company_info.csv"
     if info_path.exists():
         info_df = pd.read_csv(info_path)
         data["company_info"] = dict(zip(info_df["field"], info_df["value"]))
@@ -633,13 +637,17 @@ def generate_report() -> str:
 # ═══════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    print("\n  Generating ASML Valuation Report...\n")
+    print("\n  Generating Valuation Report...\n")
 
     report = generate_report()
 
     # Save
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
-    output_path = REPORTS_DIR / "asml_valuation_report.md"
+    import yaml as _yaml
+    with open(PROJECT_ROOT / "config" / "assumptions.yaml") as _f:
+        _cfg = _yaml.safe_load(_f)
+    _ticker = _cfg.get("company", {}).get("ticker", "company").lower()
+    output_path = REPORTS_DIR / f"{_ticker}_valuation_report.md"
     with open(output_path, "w") as f:
         f.write(report)
 

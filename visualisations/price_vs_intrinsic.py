@@ -19,7 +19,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from visualisations.chart_style import (
     COLORS, create_figure, add_narrative_zones, add_event_annotations,
-    add_source_footer, save_chart,
+    add_source_footer, save_chart, load_company_config,
 )
 
 
@@ -73,8 +73,9 @@ def plot_price_vs_intrinsic(output_dir="reports/charts"):
     """Chart 4: Market price vs DCF intrinsic value."""
     import yaml
 
+    _, ticker = load_company_config()
     prices = pd.read_csv(
-        PROJECT_ROOT / "data" / "raw" / "asml_price_history.csv",
+        PROJECT_ROOT / "data" / "raw" / f"{ticker.lower()}_price_history.csv",
         index_col=0, parse_dates=True,
     )
     prices.index = pd.to_datetime(prices.index, utc=True).tz_localize(None)
@@ -88,7 +89,7 @@ def plot_price_vs_intrinsic(output_dir="reports/charts"):
 
     # Use data-driven WACC
     from models.wacc import compute_wacc_from_data
-    info = pd.read_csv(PROJECT_ROOT / "data" / "raw" / "asml_company_info.csv")
+    info = pd.read_csv(PROJECT_ROOT / "data" / "raw" / f"{ticker.lower()}_company_info.csv")
     market_cap_usd = float(info[info["field"] == "market_cap"]["value"].values[0])
     wacc_result = compute_wacc_from_data(config, financials, market_cap_usd)
     wacc_rate = wacc_result["wacc"]
@@ -130,7 +131,8 @@ def plot_price_vs_intrinsic(output_dir="reports/charts"):
                     xytext=(0, -15), textcoords="offset points",
                     fontsize=7, ha="center", color=COLORS["green"], fontweight="bold")
 
-    ax.set_title("ASML — Market Price vs. DCF Intrinsic Value", color=COLORS["navy"])
+    company_name, _ = load_company_config()
+    ax.set_title(f"{company_name} — Market Price vs. DCF Intrinsic Value", color=COLORS["navy"])
     ax.set_ylabel("Price per Share (EUR)", color=COLORS["dark_text"])
     ax.set_ylim(0, close_eur.max() * 1.1)
 
